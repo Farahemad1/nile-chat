@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nile Chat — Egyptian Arabic AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Noto+Naskh+Arabic:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #f0eff8;
+    --muted: #8887a0;
+    --accent-left: #4f7cff;
+    --accent-right: #ff6b6b;
+    --accent-left-dim: rgba(79,124,255,0.12);
+    --accent-right-dim: rgba(255,107,107,0.12);
+    --bubble-user-left: #1e2d5a;
+    --bubble-user-right: #4a1a1a;
+    --bubble-ai-left: #1a1a2e;
+    --bubble-ai-right: #1e1a1a;
+    --font-display: 'Syne', sans-serif;
+    --font-arabic: 'Noto Naskh Arabic', serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-display);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+    height: 60px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+
+  .logo {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-left), var(--accent-right));
+  }
+
+  .header-note {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  /* Split layout */
+  .split {
+    display: grid;
+    grid-template-columns: 1fr 1px 1fr;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .divider {
+    background: var(--border);
+    position: relative;
+  }
+
+  .divider::after {
+    content: 'VS';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: 6px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+
+  /* Chat Panel */
+  .chat-panel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--surface);
+  }
+
+  .panel-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .panel-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .panel-left .panel-title { color: var(--accent-left); }
+  .panel-right .panel-title { color: var(--accent-right); }
+
+  .panel-desc {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  .status-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+
+  .status-dot.online { background: #4ade80; box-shadow: 0 0 6px #4ade8088; }
+  .status-dot.offline { background: #ef4444; }
+
+  /* Messages */
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    scroll-behavior: smooth;
+  }
+
+  .messages::-webkit-scrollbar { width: 4px; }
+  .messages::-webkit-scrollbar-track { background: transparent; }
+  .messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .message {
+    display: flex;
+    flex-direction: column;
+    max-width: 80%;
+    animation: fadeUp 0.25s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .message.user { align-self: flex-end; align-items: flex-end; }
+  .message.ai { align-self: flex-start; align-items: flex-start; }
+
+  .bubble {
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: 15px;
+    line-height: 1.6;
+    font-family: var(--font-arabic);
+    direction: rtl;
+    text-align: right;
+    word-break: break-word;
+  }
+
+  .panel-left .message.user .bubble {
+    background: var(--bubble-user-left);
+    border-bottom-right-radius: 4px;
+    color: #c8d8ff;
+  }
+
+  .panel-left .message.ai .bubble {
+    background: var(--bubble-ai-left);
+    border-bottom-left-radius: 4px;
+    border: 1px solid var(--accent-left-dim);
+    color: var(--text);
+  }
+
+  .panel-right .message.user .bubble {
+    background: var(--bubble-user-right);
+    border-bottom-right-radius: 4px;
+    color: #ffc8c8;
+  }
+
+  .panel-right .message.ai .bubble {
+    background: var(--bubble-ai-right);
+    border-bottom-left-radius: 4px;
+    border: 1px solid var(--accent-right-dim);
+    color: var(--text);
+  }
+
+  .msg-label {
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+
+  .typing {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 14px;
+    background: var(--surface2);
+    border-radius: 16px;
+    border-bottom-left-radius: 4px;
+    width: fit-content;
+  }
+
+  .typing span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--muted);
+    animation: bounce 1.2s infinite;
+  }
+
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-6px); }
+  }
+
+  /* Input area */
+  .input-area {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    flex-shrink: 0;
+    background: var(--surface);
+  }
+
+  .input-wrap {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 10px 14px;
+    transition: border-color 0.2s;
+  }
+
+  .input-wrap:focus-within { border-color: var(--border); }
+  .panel-left .input-wrap:focus-within { border-color: rgba(79,124,255,0.4); }
+  .panel-right .input-wrap:focus-within { border-color: rgba(255,107,107,0.4); }
+
+  .input-wrap textarea {
+    width: 100%;
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: var(--font-arabic);
+    font-size: 15px;
+    direction: rtl;
+    text-align: right;
+    resize: none;
+    line-height: 1.5;
+    max-height: 120px;
+    min-height: 24px;
+  }
+
+  .input-wrap textarea::placeholder {
+    color: var(--muted);
+    font-family: var(--font-display);
+    font-size: 13px;
+    direction: ltr;
+    text-align: left;
+  }
+
+  .send-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: opacity 0.2s, transform 0.1s;
+    font-size: 16px;
+  }
+
+  .send-btn:active { transform: scale(0.95); }
+  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .panel-left .send-btn { background: var(--accent-left); color: white; }
+  .panel-right .send-btn { background: var(--accent-right); color: white; }
+
+  /* Empty state */
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--muted);
+    padding: 2rem;
+    text-align: center;
+  }
+
+  .empty-icon {
+    font-size: 32px;
+    opacity: 0.4;
+  }
+
+  .empty-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .empty-hint {
+    font-size: 12px;
+    color: var(--muted);
+    opacity: 0.7;
+    max-width: 200px;
+    line-height: 1.6;
+  }
+
+  /* Error toast */
+  .error-msg {
+    font-size: 12px;
+    color: #ef4444;
+    padding: 6px 14px;
+    font-family: var(--font-display);
+    direction: ltr;
+    text-align: left;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    Nile Chat
+  </div>
+  <div class="header-note">Type in Arabic · اكتب بالعربي</div>
+</header>
+
+<div class="split">
+
+  <!-- Left: Original -->
+  <div class="chat-panel panel-left" id="panel-left">
+    <div class="panel-header">
+      <div class="panel-title">
+        <span class="status-dot online" id="status-left"></span>
+        Original Model
+      </div>
+      <div class="panel-desc">Nile-Chat 4B · No fine-tuning · Responds in Egyptian Arabic</div>
+    </div>
+    <div class="messages" id="messages-left">
+      <div class="empty-state">
+        <div class="empty-icon">🌊</div>
+        <div class="empty-title">Nile Chat — Original</div>
+        <div class="empty-hint">Type a message in Arabic below to start chatting</div>
+      </div>
+    </div>
+    <div class="input-area">
+      <div class="input-wrap">
+        <textarea id="input-left" placeholder="Type in Arabic... اكتب بالعربي" rows="1"
+          onInput="autoResize(this)" onKeyDown="handleKey(event,'left')"></textarea>
+      </div>
+      <button class="send-btn" onclick="sendMessage('left')" id="btn-left">
+        &#10148;
+      </button>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Right: Fine-tuned -->
+  <div class="chat-panel panel-right" id="panel-right">
+    <div class="panel-header">
+      <div class="panel-title">
+        <span class="status-dot offline" id="status-right"></span>
+        Fine-Tuned Model
+      </div>
+      <div class="panel-desc">Nile-Chat 4B · Custom fine-tuning · Coming soon</div>
+    </div>
+    <div class="messages" id="messages-right">
+      <div class="empty-state">
+        <div class="empty-icon">⚗️</div>
+        <div class="empty-title">Fine-Tuned — Coming Soon</div>
+        <div class="empty-hint">This side will show the fine-tuned version once training is complete</div>
+      </div>
+    </div>
+    <div class="input-area">
+      <div class="input-wrap">
+        <textarea id="input-right" placeholder="Type in Arabic... اكتب بالعربي" rows="1"
+          onInput="autoResize(this)" onKeyDown="handleKey(event,'right')"></textarea>
+      </div>
+      <button class="send-btn" onclick="sendMessage('right')" id="btn-right" >
+        &#10148;
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const SERVER = 'http://localhost:5000';
+  const FINE_TUNED_SERVER = 'https://grumbling-pledge-impound.ngrok-free.dev';
+
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  }
+
+  function handleKey(e, side) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage(side);
+    }
+  }
+
+  function scrollToBottom(side) {
+    const el = document.getElementById('messages-' + side);
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function clearEmpty(side) {
+    const msgs = document.getElementById('messages-' + side);
+    const empty = msgs.querySelector('.empty-state');
+    if (empty) empty.remove();
+  }
+
+  function addMessage(side, role, text) {
+    clearEmpty(side);
+    const msgs = document.getElementById('messages-' + side);
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'message ' + role;
+
+    const label = document.createElement('div');
+    label.className = 'msg-label';
+    label.textContent = role === 'user' ? 'You' : 'Nile Chat';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = text;
+
+    wrapper.appendChild(label);
+    wrapper.appendChild(bubble);
+    msgs.appendChild(wrapper);
+    scrollToBottom(side);
+    return wrapper;
+  }
+
+  function addTyping(side) {
+    clearEmpty(side);
+    const msgs = document.getElementById('messages-' + side);
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'message ai';
+    wrapper.id = 'typing-' + side;
+
+    const label = document.createElement('div');
+    label.className = 'msg-label';
+    label.textContent = 'Nile Chat';
+
+    const typing = document.createElement('div');
+    typing.className = 'typing';
+    typing.innerHTML = '<span></span><span></span><span></span>';
+
+    wrapper.appendChild(label);
+    wrapper.appendChild(typing);
+    msgs.appendChild(wrapper);
+    scrollToBottom(side);
+  }
+
+  function removeTyping(side) {
+    const el = document.getElementById('typing-' + side);
+    if (el) el.remove();
+  }
+
+  function addError(side, msg) {
+    const msgs = document.getElementById('messages-' + side);
+    const err = document.createElement('div');
+    err.className = 'error-msg';
+    err.textContent = '⚠ ' + msg;
+    msgs.appendChild(err);
+    scrollToBottom(side);
+  }
+
+  async function sendMessage(side) {
+    const server = side === 'left' ? SERVER : FINE_TUNED_SERVER;
+
+    const input = document.getElementById('input-' + side);
+    const btn = document.getElementById('btn-' + side);
+    const text = input.value.trim();
+    if (!text) return;
+
+    input.value = '';
+    input.style.height = 'auto';
+    btn.disabled = true;
+
+    addMessage(side, 'user', text);
+    addTyping(side);
+
+    try {
+      const res = await fetch(server + '/chat', {
+        method: 'POST',
+        headers: { 
+    'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'true'
+},
+        body: JSON.stringify({ message: text, emotion: 'neutral' })
+      });
+
+      const data = await res.json();
+      removeTyping(side);
+
+      if (data.error) {
+        addError(side, data.error);
+      } else {
+        addMessage(side, 'ai', data.reply);
+      }
+    } catch (e) {
+      removeTyping(side);
+      addError(side, 'Could not reach server. Make sure server.py is running on port 5000.');
+    }
+
+    btn.disabled = false;
+    input.focus();
+  }
+
+  async function checkHealth() {
+    try {
+      const res = await fetch(SERVER + '/health');
+      const data = await res.json();
+      const dot = document.getElementById('status-left');
+      dot.className = 'status-dot ' + (data.llm_server ? 'online' : 'offline');
+    } catch {
+      document.getElementById('status-left').className = 'status-dot offline';
+    }
+  }
+
+  checkHealth();
+  setInterval(checkHealth, 10000);
+</script>
+</body>
+</html>
