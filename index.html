@@ -404,10 +404,10 @@
   <div class="chat-panel panel-right" id="panel-right">
     <div class="panel-header">
       <div class="panel-title">
-        <span class="status-dot offline" id="status-right"></span>
+        <span class="status-dot online" id="status-right"></span>
         Fine-Tuned Model
       </div>
-      <div class="panel-desc">Nile-Chat 4B · Custom fine-tuning · Coming soon</div>
+      <div class="panel-desc">Nile-Chat 4B · Fine-tuned on Egyptian debate corpus</div>
     </div>
     <div class="messages" id="messages-right">
       <div class="empty-state">
@@ -431,7 +431,7 @@
 
 <script>
   const SERVER = 'http://localhost:5000';
-  const FINE_TUNED_SERVER = 'https://grumbling-pledge-impound.ngrok-free.dev';
+  const FINE_TUNED_SERVER = 'https://farahemad-nile-chat-finetuned.hf.space';
 
   function autoResize(el) {
     el.style.height = 'auto';
