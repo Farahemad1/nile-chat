@@ -549,7 +549,7 @@
       }
     } catch (e) {
       removeTyping(side);
-      addError(side, 'Could not reach server. Make sure server.py is running on port 5000.');
+      addError(side, side === 'left' ? 'Could not reach local server. Make sure server.py is running on port 5000.' : 'Could not reach fine-tuned model. Try again in a moment.');
     }
 
     btn.disabled = false;
